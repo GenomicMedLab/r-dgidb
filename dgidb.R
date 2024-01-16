@@ -1,5 +1,7 @@
 library(httr)
 library(jsonlite)
+library(tidyverse)
+library(data.table)
 
 api_url <- function(env = "local") {
   url <- "http://localhost:3000/api/graphql"
@@ -14,10 +16,8 @@ api_url <- function(env = "local") {
 
 base_url <- api_url('staging')
 
-get_interactions <- function(terms,search='genes',immunotherapy=NULL,antineoplastic=NULL,sourcedbname=NULL,pmid=NULL,interactiontype=NULL,approved=NULL) {
-  if (is.list(terms)) {
-    terms <- paste0("\"", paste(terms, collapse = "\",\""), "\"")
-  }
+get_interactions <- function(terms,use_processing=TRUE,search='genes',immunotherapy=NULL,antineoplastic=NULL,sourcedbname=NULL,pmid=NULL,interactiontype=NULL,approved=NULL) {
+  terms <- paste0("[\"", paste(toupper(terms), collapse = "\",\""), "\"]")
   if (search == "genes") {
     immunotherapy <- NULL
     antineoplastic <- NULL
@@ -25,30 +25,94 @@ get_interactions <- function(terms,search='genes',immunotherapy=NULL,antineoplas
 
   # TODO: Implement Filters
   filters = ""
-
   if (search == 'genes') {
-      query <- paste0("{\ngenes(names: [\"", toupper(terms), "\"]", filters, ") {\nnodes{\nname\nlongName\ngeneCategories{\nname\n}\ninteractions {\ninteractionAttributes {\nname\nvalue\n}\ndrug {\nname\napproved\n}\ninteractionScore\ninteractionClaims {\npublications {\npmid\ncitation\n}\nsource {\nfullName\nid\n}\n}\n}\n}\n}\n}")
+      query <- paste0("{\ngenes(names: ", terms, filters, ") {\nnodes{\nname\nlongName\ngeneCategories{\nname\n}\ninteractions {\ninteractionAttributes {\nname\nvalue\n}\ndrug {\nname\napproved\n}\ninteractionScore\ninteractionClaims {\npublications {\npmid\ncitation\n}\nsource {\nfullName\nid\n}\n}\n}\n}\n}\n}")
   } else if (search == 'drugs') {
-      query <- paste0("{\ndrugs(names: [\"", toupper(terms), "\"]", filters, ") {\nnodes{\nname\napproved\ninteractions {\ngene {\nname\n}\ninteractionAttributes {\nname\nvalue\n}\ninteractionScore\ninteractionClaims {\npublications {\npmid\ncitation\n}\nsource {\nfullName\nid\n}\n}\n}\n}\n}\n}")
+      query <- paste0("{\ndrugs(names: ", terms, filters, ") {\nnodes{\nname\napproved\ninteractions {\ngene {\nname\n}\ninteractionAttributes {\nname\nvalue\n}\ninteractionScore\ninteractionClaims {\npublications {\npmid\ncitation\n}\nsource {\nfullName\nid\n}\n}\n}\n}\n}\n}")
   } else {
       stop("Search type must be specified using: search='drugs' or search='genes'")
   }
 
   r <- POST(base_url, body = list(query = query), encode = "json")
-
   data <- content(r)$data$genes$nodes
+  
+  if(use_processing == TRUE) {
+    if (search == 'genes') {
+      data <- process_gene(data)
+    } else if (search == 'drugs') {
+      stop("TO BE IMPLEMENTED")
+    } else {
+      stop("Search type must be specified using: search='drugs' or search='genes'")
+    }
+  }
   return(data)
-} # data <- get_interactions(c("BRAF"))
+}
+# Test Examples:
+# data <- get_interactions(c("BRAF","PDGFRA"))
+# data <- get_interactions(c("BRAF","PDGFRA"),use_processing=FALSE)
+
+process_gene <- function(data) {
+  dt <- rbindlist(lapply(data, as.data.table))
+  dt <- unnest_wider(dt, col = "interactions")
+  dt <- unnest_wider(dt, col = "drug",names_sep="_")
+  
+
+  dt$interactionAttributes <- lapply(dt$interactionAttributes, function(x) {
+    attributes = list()
+    for(i in 1:length(x)) {
+      elem <- paste(x[[i]]$name, x[[i]]$value, sep = ": ")
+      attributes <- append(attributes, elem)
+    }
+    intAttributes <- paste(attributes, collapse = " | ")
+    return(intAttributes)
+  })
+  
+  dt$pmid <- lapply(dt$interactionClaims, function(x) {
+    pmids = list()
+    
+    for(i in 1:length(x)) {
+        curr_publication <- x[[i]]$publications
+        if(length(curr_publication) == 0) next
+        for(j in 1:length(curr_publication)) {
+          current_pmid <- curr_publication[[j]]$pmid
+          pmids <- append(pmids, current_pmid)
+        }
+    }
+    pmids_str <- paste(pmids, collapse = " | ")
+    
+    return(pmids_str)
+  })
+
+  dt$source <- lapply(dt$interactionClaims, function(x) {
+    sources = list()
+    
+    for(i in 1:length(x)) {
+        current_source_name <- x[[i]]$source$fullName
+        sources <- append(sources, current_source_name)
+    }
+    sources_str <- paste(sources, collapse = " | ")
+    
+    return(sources_str)
+  })
+  
+  dt$geneCategories <- NULL
+  dt$interactionClaims <- NULL
+  setnames(dt, 
+  old = c("name","interactionAttributes","drug_name","drug_approved","interactionScore"), 
+  new = c("gene","interaction_attributes","drug","approval","score"))
+
+  return(dt)
+}
 
 get_gene_list <- function() {
   query <- "{\ngenes {\nnodes {\nname\n}\n}\n}"
   r <- POST(base_url, body = list(query = query), encode = "json")
-  gene_list <- c()
+  gene_list <- list()
   raw_nodes <- content(r)$data$genes$nodes
   for(i in 1:length(raw_nodes)) {
     gene_name <- raw_nodes[[i]]$name
-    gene_list <- c(gene_list, gene_name)
+    gene_list <- append(gene_list, gene_name)
   }
-  gene_list <- sort(gene_list)
+  gene_list <- sort(unlist(gene_list))
   return(gene_list)
 }
