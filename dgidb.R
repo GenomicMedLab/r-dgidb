@@ -116,3 +116,76 @@ get_gene_list <- function() {
   gene_list <- sort(unlist(gene_list))
   return(gene_list)
 }
+
+get_drug_applications <- function(terms,use_processing=TRUE) {
+  terms <- paste0("[\"", paste(toupper(terms), collapse = "\",\""), "\"]")
+  query <- paste0("{\ndrugs(names: ", terms, ") {\nnodes{\nname \ndrugApplications {\nappNo\n}\n}\n}\n}\n")
+  
+  r <- POST(base_url, body = list(query = query), encode = "json")
+  data <- content(r)
+
+  if (use_processing == TRUE) {
+    data <- process_drug_applications(data)
+    data <- openfda_data(data)
+  }
+  return(data)
+}
+
+process_drug_applications <- function(data) {0
+  drug_list <- c()
+  application_list <- c()
+  
+  for(node in data$data$drugs$nodes) {
+    current_drug <- node$name
+    
+    for(application in node$drugApplications) {
+      drug_list <- c(drug_list, current_drug)
+      application <- toupper(gsub(":", "", strsplit(application$appNo, "\\.")[[1]][2]))
+      application_list <- c(application_list, application)
+    }
+  }
+  
+  dataframe <- data.frame(drug = drug_list, application = application_list)
+  return(dataframe)
+}
+
+openfda_data <- function(dataframe) {
+  openfda_base_url <- 'https://api.fda.gov/drug/drugsfda.json?search=openfda.application_number:'
+  terms <- as.list(dataframe$application)
+  descriptions <- vector("list", length(terms))
+  
+  for(i in seq_along(terms)) {
+    term <- terms[[i]]
+    r <- GET(paste0(openfda_base_url, "\"", term, "\""), add_headers('User-Agent' = 'Custom'))
+    
+    tryCatch({
+      results <- content(r, "parsed")$results
+      if (length(results) > 0 && !is.null(results[[1]]$products)) {
+        products <- results[[1]]$products
+        f <- vector("character", length(products))
+        
+        for(j in seq_along(products)) {
+          product <- products[[j]]
+          brand_name <- product$brand_name
+          marketing_status <- product$marketing_status
+          dosage_form <- product$dosage_form
+          active_ingredient <- product$active_ingredients[[1]]$name
+          dosage_strength <- product$active_ingredients[[1]]$strength
+          f[j] <- paste0(brand_name, ": ", dosage_strength, " ", marketing_status, " ", dosage_form)
+        }
+        
+        descriptions[[i]] <- paste(f, collapse = " | ")
+      } else {
+        descriptions[[i]] <- "none"
+      }
+    }, error = function(e) {
+      descriptions[[i]] <- "none"
+    })
+  }
+  
+  dataframe$description <- descriptions
+  return(dataframe)
+}
+
+# data <- get_drug_applications(c("SUNITINIB","EXENATIDE"),use_processing=FALSE)
+# data <- get_drug_applications(c("SUNITINIB","EXENATIDE"),use_processing=TRUE)
