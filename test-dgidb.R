@@ -1,0 +1,5 @@
+source("dgidb.R")
+raw_gene_data <- get_interactions(c("BRAF","PDGFRA"),use_processing=FALSE)
+gene_data <- get_interactions(c("BRAF","PDGFRA"))
+raw_drug_data <- get_interactions(c("SUNITINIB","ZALCITABINE"),use_processing=FALSE,search='drugs')
+drug_data <- get_interactions(c("SUNITINIB","ZALCITABINE"),search='drugs')

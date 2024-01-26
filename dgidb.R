@@ -1,5 +1,4 @@
 library(httr)
-library(jsonlite)
 library(tidyverse)
 library(data.table)
 
@@ -34,29 +33,26 @@ get_interactions <- function(terms,use_processing=TRUE,search='genes',immunother
   }
 
   r <- POST(base_url, body = list(query = query), encode = "json")
-  data <- content(r)$data$genes$nodes
-  
+  data <- content(r)$data
+
   if(use_processing == TRUE) {
     if (search == 'genes') {
       data <- process_gene(data)
     } else if (search == 'drugs') {
-      stop("TO BE IMPLEMENTED")
+      data <- process_drug(data)
     } else {
       stop("Search type must be specified using: search='drugs' or search='genes'")
     }
   }
   return(data)
 }
-# Test Examples:
-# data <- get_interactions(c("BRAF","PDGFRA"))
-# data <- get_interactions(c("BRAF","PDGFRA"),use_processing=FALSE)
 
 process_gene <- function(data) {
+  data <- data$genes$nodes
   dt <- rbindlist(lapply(data, as.data.table))
   dt <- unnest_wider(dt, col = "interactions")
   dt <- unnest_wider(dt, col = "drug",names_sep="_")
   
-
   dt$interactionAttributes <- lapply(dt$interactionAttributes, function(x) {
     attributes = list()
     for(i in 1:length(x)) {
@@ -101,6 +97,58 @@ process_gene <- function(data) {
   old = c("name","interactionAttributes","drug_name","drug_approved","interactionScore"), 
   new = c("gene","interaction_attributes","drug","approval","score"))
 
+  return(dt)
+}
+
+process_drug <- function(data) {
+  data <- data$drugs$nodes
+  dt <- rbindlist(lapply(data, as.data.table))
+  dt <- unnest_wider(dt, col = "interactions")
+  dt <- unnest_wider(dt, col = "gene",names_sep="_")
+
+  dt$interactionAttributes <- lapply(dt$interactionAttributes, function(x) {
+    attributes = list()
+    for(i in 1:length(x)) {
+      elem <- paste(x[[i]]$name, x[[i]]$value, sep = ": ")
+      attributes <- append(attributes, elem)
+    }
+    intAttributes <- paste(attributes, collapse = " | ")
+    return(intAttributes)
+  })
+  
+  dt$pmid <- lapply(dt$interactionClaims, function(x) {
+    pmids = list()
+    
+    for(i in 1:length(x)) {
+        curr_publication <- x[[i]]$publications
+        if(length(curr_publication) == 0) next
+        for(j in 1:length(curr_publication)) {
+          current_pmid <- curr_publication[[j]]$pmid
+          pmids <- append(pmids, current_pmid)
+        }
+    }
+    pmids_str <- paste(pmids, collapse = " | ")
+    
+    return(pmids_str)
+  })
+
+  dt$source <- lapply(dt$interactionClaims, function(x) {
+    sources = list()
+    
+    for(i in 1:length(x)) {
+        current_source_name <- x[[i]]$source$fullName
+        sources <- append(sources, current_source_name)
+    }
+    sources_str <- paste(sources, collapse = " | ")
+    
+    return(sources_str)
+  })
+
+  dt$interactionClaims <- NULL
+  setnames(dt, 
+  old = c("name","approved","gene_name","interactionAttributes","interactionScore"), 
+  new = c("drug","approval","gene","interaction_attributes","score"))
+  
   return(dt)
 }
 
