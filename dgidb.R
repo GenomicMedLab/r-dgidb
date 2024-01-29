@@ -49,10 +49,13 @@ get_interactions <- function(terms,use_processing=TRUE,search='genes',immunother
 
 process_gene <- function(data) {
   data <- data$genes$nodes
-  dt <- rbindlist(lapply(data, as.data.table))
+  # Throws an expected warning that a nested-list is being extended to match the longest list in the json
+  suppressWarnings({
+    dt <- rbindlist(lapply(data, as.data.table), fill = TRUE)
+  })
   dt <- unnest_wider(dt, col = "interactions")
   dt <- unnest_wider(dt, col = "drug",names_sep="_")
-  
+
   dt$interactionAttributes <- lapply(dt$interactionAttributes, function(x) {
     attributes = list()
     for(i in 1:length(x)) {
@@ -234,6 +237,3 @@ openfda_data <- function(dataframe) {
   dataframe$description <- descriptions
   return(dataframe)
 }
-
-# data <- get_drug_applications(c("SUNITINIB","EXENATIDE"),use_processing=FALSE)
-# data <- get_drug_applications(c("SUNITINIB","EXENATIDE"),use_processing=TRUE)
