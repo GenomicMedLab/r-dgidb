@@ -2,18 +2,7 @@ library(httr)
 library(tidyverse)
 library(data.table)
 
-api_url <- function(env = "local") {
-  url <- "http://localhost:3000/api/graphql"
-  if (env == "local") {
-    url <- "http://localhost:3000/api/graphql"
-  }
-  if (env == "staging") {
-    url <- "https://staging.dgidb.org/api/graphql"
-  }
-  return(url)
-}
-
-base_url <- api_url('staging')
+API_ENDPOINT_URL <- Sys.getenv("DGIDB_API_URL", unset="https://dgidb.org/api/graphql")
 
 get_interactions <- function(terms,use_processing=TRUE,search='genes',immunotherapy=NULL,antineoplastic=NULL,sourcedbname=NULL,pmid=NULL,interactiontype=NULL,approved=NULL) {
   terms <- paste0("[\"", paste(toupper(terms), collapse = "\",\""), "\"]")
@@ -32,7 +21,7 @@ get_interactions <- function(terms,use_processing=TRUE,search='genes',immunother
       stop("Search type must be specified using: search='drugs' or search='genes'")
   }
 
-  r <- POST(base_url, body = list(query = query), encode = "json")
+  r <- POST(API_ENDPOINT_URL, body = list(query = query), encode = "json")
   data <- content(r)$data
 
   if(use_processing == TRUE) {
@@ -154,7 +143,7 @@ process_drug <- function(data) {
 
 get_gene_list <- function() {
   query <- "{\ngenes {\nnodes {\nname\n}\n}\n}"
-  r <- POST(base_url, body = list(query = query), encode = "json")
+  r <- POST(API_ENDPOINT_URL, body = list(query = query), encode = "json")
   gene_list <- list()
   raw_nodes <- content(r)$data$genes$nodes
   for(i in 1:length(raw_nodes)) {
@@ -169,7 +158,7 @@ get_drug_applications <- function(terms,use_processing=TRUE) {
   terms <- paste0("[\"", paste(toupper(terms), collapse = "\",\""), "\"]")
   query <- paste0("{\ndrugs(names: ", terms, ") {\nnodes{\nname \ndrugApplications {\nappNo\n}\n}\n}\n}\n")
   
-  r <- POST(base_url, body = list(query = query), encode = "json")
+  r <- POST(API_ENDPOINT_URL, body = list(query = query), encode = "json")
   data <- content(r)
 
   if (use_processing == TRUE) {
