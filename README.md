@@ -5,10 +5,14 @@
 
 <!-- badges: start -->
 
-[![GitHub
-issues](https://img.shields.io/github/issues/dgidb/r-dgidb)](https://github.com/dgidb/r-dgidb/issues)
-[![GitHub
-pulls](https://img.shields.io/github/issues-pr/dgidb/r-dgidb)](https://github.com/dgidb/r-dgidb/pulls)
+[![Code
+QA](https://github.com/dgidb/r-dgidb/actions/workflows/code_qa.yaml/badge.svg)](https://github.com/dgidb/r-dgidb/actions/workflows/code_qa.yaml)
+[![R-universe
+testing](https://github.com/dgidb/r-dgidb/actions/workflows/r-universe.yml/badge.svg)](https://github.com/dgidb/r-dgidb/actions/workflows/r-universe.yml)
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![License:
+MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 <!-- badges: end -->
 
 `rDGIdb` provides an R interface to the [Drug-Gene Interaction Database
@@ -18,7 +22,7 @@ DGIdb data sources, and Drugs@FDA application data.
 
 ## Installation
 
-`rDGIdb` is currently under development as version `0.99.0`.
+The current development version is 0.99.0 and requires R 4.6.0 or later.
 
 The development version can be installed from GitHub with:
 
@@ -136,7 +140,9 @@ The function batches repeated application lookups within each call.
 Drugs@FDA data are intended for research and should not be the sole
 basis for medical decisions.
 
-For a complete walkthrough, see:
+For a complete walkthrough, see the [introductory
+vignette](vignettes/rDGIdb.Rmd). With vignettes installed, open it in R
+with:
 
 ``` r
 vignette("rDGIdb")
@@ -184,4 +190,4 @@ contributing to this project, you agree to abide by its terms.
 
 ## Development
 
-See CONTRIBUTING.md.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
