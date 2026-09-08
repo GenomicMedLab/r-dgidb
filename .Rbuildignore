@@ -1,3 +1,4 @@
 ^\.github$
+^\.justfile$
 ^LICENSE\.md$
 ^README\.Rmd$
