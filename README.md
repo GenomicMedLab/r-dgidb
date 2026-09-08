@@ -13,8 +13,8 @@ pulls](https://img.shields.io/github/issues-pr/dgidb/r-dgidb)](https://github.co
 
 `rDGIdb` provides an R interface to the [Drug-Gene Interaction Database
 (DGIdb)](https://dgidb.org/) GraphQL API. It supports queries for drugs,
-genes, drug-gene interactions, gene categories, DGIdb data sources, and
-Drugs@FDA application data.
+genes, drug-gene interactions and their claim types, gene categories,
+DGIdb data sources, and Drugs@FDA application data.
 
 ## Installation
 
@@ -80,12 +80,24 @@ getInteractions(
 )
 ```
 
+Retrieve the current interaction-type vocabulary and use a returned
+value as an interaction filter:
+
+``` r
+interaction_types <- getInteractionTypes()
+getInteractions(
+    "BRAF",
+    interactionType = interaction_types$interaction_type[[1]]
+)
+```
+
 Other package functions provide access to DGIdb gene categories, source
 databases, complete gene and drug lists, and Drugs@FDA application data.
 
 ``` r
 getCategories("BRAF")
 getSources(sourceTypes$INTERACTION)
+getInteractionTypes()
 getDrugApplications("Imatinib")
 getAllGenes()
 getAllDrugs()

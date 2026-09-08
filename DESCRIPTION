@@ -21,9 +21,10 @@ Authors@R: c(
     )
     )
 Description: Provides an R interface to the 'DGIdb' GraphQL API. The package
-    supports queries for drugs, genes, drug-gene interactions, gene categories,
-    DGIdb data sources, and Drugs@FDA application data. It enables access to
-    current DGIdb data for integration into R and Bioconductor workflows.
+    supports queries for drugs, genes, drug-gene interactions and their claim
+    types, gene categories, DGIdb data sources, and Drugs@FDA application data.
+    It enables access to current DGIdb data for integration into R and
+    Bioconductor workflows.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Depends:

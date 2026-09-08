@@ -35,6 +35,7 @@ package and are located at runtime using `system.file()`.
 - `get_genes.graphql` — Retrieve specified genes.
 - `get_interactions_by_drug.graphql` — Retrieve interactions for specified drugs.
 - `get_interactions_by_gene.graphql` — Retrieve interactions for specified genes.
+- `get_interaction_types.graphql` — Retrieve interaction claim types.
 - `get_sources.graphql` — Retrieve DGIdb sources.
 
 Queries should be kept in separate `.graphql` files rather than

@@ -128,6 +128,47 @@ test_that("getInteractions() applies filters by search type", {
     expect_true(params$approved)
 })
 
+test_that("getInteractionTypes() returns all interaction claim types", {
+    local_mocked_bindings(
+        .postQuery = function(apiUrl, queryFile, variables) {
+            expect_equal(apiUrl, "https://example.test/graphql")
+            expect_equal(queryFile, "queries/get_interaction_types.graphql")
+            expect_null(variables)
+            list(interactionClaimTypes = list(nodes = list(
+                list(
+                    type = "inhibitor",
+                    id = "claim-type-1",
+                    directionality = "INHIBITORY",
+                    definition = "Decreases target activity.",
+                    reference = "<a href=\"https://example.test\">Example</a>"
+                ),
+                list(
+                    type = "inhibitor",
+                    id = "claim-type-2",
+                    directionality = NULL,
+                    definition = "Another inhibitor definition.",
+                    reference = NULL
+                )
+            )))
+        }
+    )
+
+    results <- getInteractionTypes("https://example.test/graphql")
+
+    expect_s3_class(results, "data.frame")
+    expect_identical(names(results), c(
+        "interaction_type", "interaction_type_id",
+        "interaction_type_directionality", "interaction_type_definition",
+        "interaction_type_reference"
+    ))
+    expect_equal(results$interaction_type, c("inhibitor", "inhibitor"))
+    expect_equal(results$interaction_type_id, c("claim-type-1", "claim-type-2"))
+    expect_equal(results$interaction_type_directionality[[1]], "INHIBITORY")
+    expect_true(is.na(results$interaction_type_directionality[[2]]))
+    expect_match(results$interaction_type_reference[[1]], "<a href=")
+    expect_true(is.na(results$interaction_type_reference[[2]]))
+})
+
 httptest2::with_mock_api({
     test_that("getCategories() returns gene categories", {
         results <- getCategories("BRAF")
@@ -248,6 +289,8 @@ test_that("query functions preserve their schemas for empty results", {
         .postQuery = function(apiUrl, queryFile, variables) {
             connection <- if (grepl("sources", queryFile)) {
                 "sources"
+            } else if (grepl("interaction_types", queryFile)) {
+                "interactionClaimTypes"
             } else if (grepl("gene|categories", queryFile)) {
                 "genes"
             } else {
@@ -261,6 +304,7 @@ test_that("query functions preserve their schemas for empty results", {
         drugs = getDrugs("not-real"),
         genes = getGenes("not-real"),
         interactions = getInteractions("not-real"),
+        interaction_types = getInteractionTypes(),
         categories = getCategories("not-real"),
         sources = getSources(),
         all_genes = getAllGenes(),
@@ -283,6 +327,11 @@ test_that("query functions preserve their schemas for empty results", {
             "drug_concept_id", "drug_approved", "interaction_score",
             "interaction_attributes", "interaction_pmids",
             "interaction_sources"
+        ),
+        interaction_types = c(
+            "interaction_type", "interaction_type_id",
+            "interaction_type_directionality", "interaction_type_definition",
+            "interaction_type_reference"
         ),
         categories = c(
             "gene_name", "gene_concept_id", "gene_full_name",
