@@ -142,6 +142,16 @@ For a complete walkthrough, see:
 vignette("rDGIdb")
 ```
 
+## Migrating from the legacy interface
+
+For replacements for `queryDGIdb()` and the legacy result accessors, see
+the [migration guide](vignettes/migrating-from-legacy-rDGIdb.Rmd). With
+vignettes installed, open it in R with:
+
+``` r
+vignette("migrating-from-legacy-rDGIdb")
+```
+
 ## Getting help
 
 If you encounter a problem with `rDGIdb`, first check the package

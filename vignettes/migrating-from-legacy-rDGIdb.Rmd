@@ -1,0 +1,284 @@
+---
+title: "Migrating from legacy rDGIdb"
+date: "`r BiocStyle::doc_date()`"
+package: "`r BiocStyle::pkg_ver('rDGIdb')`"
+output:
+  BiocStyle::html_document:
+    toc: true
+    toc_depth: 2
+vignette: >
+  %\VignetteIndexEntry{Migrating from legacy rDGIdb}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+online <- interactive()
+```
+
+# Start with a query
+
+This guide is for users of the legacy `rDGIdb` interface built around
+`queryDGIdb()` and its result accessors. The new interface queries DGIdb through
+GraphQL and returns base R data frames. Legacy functions and result classes
+are not provided by the new interface.
+
+Previously:
+
+```{r legacy-query, eval = FALSE}
+library(rDGIdb)
+genes <- c("TNF", "AP1", "AP2", "XYZA")
+result <- queryDGIdb(genes)
+detailedResults(result)
+```
+
+Now:
+
+```{r load-package}
+library(rDGIdb)
+```
+
+```{r new-query, eval = online}
+genes <- c("TNF", "AP1", "AP2", "XYZA")
+interactions <- getInteractions(terms = genes)
+head(interactions[c("gene_name", "drug_name", "interaction_score")])
+```
+
+The returned data frame is the result: there is no accessor to call first.
+Its columns differ from the legacy detailed results. Multi-valued fields,
+including `interaction_sources`, `interaction_pmids`, and
+`interaction_attributes`, are list-columns. For example,
+`interactions$interaction_sources[[1]]` contains the sources for the first
+row, when a row is present. Interaction type labels are not a column in this
+result, even though they can be used as query filters.
+
+# Function reference
+
+| Legacy function | New interface or recipe |
+| --- | --- |
+| `queryDGIdb(genes)` | `getInteractions(terms = genes)` |
+| `detailedResults(result)` | Use the returned interaction data frame directly |
+| `resultSummary(result)` | Count rows, unique gene IDs, and unique drug IDs; see below |
+| `byGene(result)` | Split the interaction data frame by gene |
+| `searchTermSummary(result)` | No direct replacement for legacy search-term match classifications |
+| `sourceDatabases()` | `getSources(sourceTypes$INTERACTION)`; use `source_short_name` for filters |
+| `geneCategories()` | `getCategories(genes)` returns annotations for specified genes, not a global vocabulary |
+| `interactionTypes()` | `getInteractionTypes()`; extract unique, nonmissing `interaction_type` values |
+| `plotInteractionsBySource(result)` | Count source membership and use base R `barplot()` |
+| `resourceVersions()` | Inspect names and versions from `getSources()` |
+
+The recipes below describe their counting and filtering rules explicitly.
+They do not reproduce the legacy result object's exact structure or guarantee
+identical historical results.
+
+# Filters and available values
+
+## Source databases and interaction types
+
+The basic argument changes are:
+
+| Legacy argument | New argument |
+| --- | --- |
+| `genes` | `terms` (with the default `search = "genes"`) |
+| `sourceDatabases` | `source` |
+| `interactionTypes` | `interactionType` |
+| `geneCategories` | Retrieve annotations separately and subset locally, as below |
+
+Omit optional filters or use `NULL` to leave them unset. The current GraphQL
+queries accept a **single string** for `source` and `interactionType`.
+Legacy examples passing vectors of sources or types are therefore not direct
+replacements. Choose one value per filter for a query; combining separate
+queries would require defining union/intersection and deduplication rules for
+your analysis.
+
+```{r filter-values, eval = online}
+sources <- getSources(sourceTypes$INTERACTION)
+sources[c("source_name", "source_short_name")]
+
+interaction_types <- getInteractionTypes()
+type_values <- unique(na.omit(interaction_types$interaction_type))
+type_values
+```
+
+Use `source_short_name`, which contains the database identifiers used by
+queries, rather than the display names in `source_name`. Multiple interaction
+type records can have the same label; `unique()` above gives filter values
+without discarding records from the original metadata table.
+
+For example, using one of each available value:
+
+```{r filtered-query, eval = online}
+if (nrow(sources) > 0L && length(type_values) > 0L) {
+    filtered <- getInteractions(
+        "BRAF",
+        source = sources$source_short_name[[1]],
+        interactionType = type_values[[1]]
+    )
+}
+```
+
+That combination may return no interactions. Available values and underlying
+DGIdb data can change over time.
+
+## Gene categories
+
+`getCategories()` requires gene names and returns gene-category annotations.
+It does not replace the legacy zero-argument vocabulary lookup. Inspect
+`unique(categories$gene_category)` to find categories among the queried genes.
+To filter interactions by category, match the annotated gene concept IDs:
+
+```{r category-query, eval = online}
+categories <- getCategories(genes)
+selected_categories <- "CLINICALLY ACTIONABLE"
+selected_ids <- unique(categories$gene_concept_id[
+    categories$gene_category %in% selected_categories
+])
+category_interactions <- interactions[
+    interactions$gene_concept_id %in% selected_ids, ,
+    drop = FALSE
+]
+```
+
+This retains interactions for genes with any selected category. A gene without
+a matching annotation is excluded; an empty selection produces a zero-row
+data frame. Check the returned category labels before choosing values.
+
+# Working with results
+
+The following small data sets are **illustrative**, not retrieved DGIdb
+records. They let the recipes run without network access and include repeated
+source claims to show how counting works. Apply the same operations to your
+own `interactions` and `categories` data frames.
+
+```{r illustrative-data}
+example_interactions <- data.frame(
+    gene_name = c("GENE_A", "GENE_A", "GENE_B"),
+    gene_concept_id = c("gene:a", "gene:a", "gene:b"),
+    drug_name = c("DRUG_X", "DRUG_Y", "DRUG_X"),
+    drug_concept_id = c("drug:x", "drug:y", "drug:x")
+)
+example_interactions$interaction_sources <- list(
+    c("Source A", "Source A", "Source B"),
+    "Source A",
+    character()
+)
+example_categories <- data.frame(
+    gene_concept_id = c("gene:a", "gene:b"),
+    gene_category = c("CATEGORY_1", "CATEGORY_2")
+)
+
+selected_ids <- unique(example_categories$gene_concept_id[
+    example_categories$gene_category %in% "CATEGORY_1"
+])
+example_selected <- example_interactions[
+    example_interactions$gene_concept_id %in% selected_ids, ,
+    drop = FALSE
+]
+example_selected
+```
+
+## Summaries and grouping
+
+For a replacement for common `resultSummary()` tasks, state what is counted:
+
+```{r summarize-results}
+summarize_interactions <- function(x) {
+    c(
+        interaction_rows = nrow(x),
+        genes = length(unique(x$gene_concept_id)),
+        drugs = length(unique(x$drug_concept_id))
+    )
+}
+summarize_interactions(example_interactions)
+```
+
+These are counts of returned rows and distinct concept identifiers, not counts
+of input search terms or evidence claims. A simple alternative to `byGene()`
+is a named list of data frames:
+
+```{r group-results}
+by_gene <- split(example_interactions, example_interactions$gene_name)
+by_gene[["GENE_A"]]
+```
+
+## Plot interactions by source
+
+Each source counts at most once per interaction row. An interaction supported
+by two sources contributes to both bars, so the sum can exceed the number of
+rows. Rows with no sources contribute to no bars.
+
+```{r plot-sources, fig.width = 7, fig.height = 4}
+count_sources <- function(x) {
+    source_values <- unlist(
+        lapply(x$interaction_sources, unique),
+        use.names = FALSE
+    )
+    sort(table(source_values), decreasing = TRUE)
+}
+source_counts <- count_sources(example_interactions)
+if (length(source_counts) > 0L) {
+    barplot(
+        source_counts,
+        main = "Number of interaction rows by source",
+        ylab = "Interaction rows"
+    )
+}
+```
+
+## Empty results and search terms
+
+Queries with no returned interactions produce a zero-row data frame with the
+usual columns. The summaries above return zeros, grouping returns an empty
+list, and the plot guard skips an empty chart:
+
+```{r empty-results}
+empty_interactions <- example_interactions[FALSE, , drop = FALSE]
+summarize_interactions(empty_interactions)
+split(empty_interactions, empty_interactions$gene_name)
+count_sources(empty_interactions)
+```
+
+There is no direct replacement for `searchTermSummary()`. A gene absent from
+interaction results may have no interactions under the selected filters;
+absence does not prove that its input name was unrecognized. `getGenes()` can
+be used for a separate record lookup, but its data frame does not expose the
+legacy per-input ambiguous/unmatched classifications. Comparing input strings
+to returned gene names also cannot reconstruct those classifications, because
+returned names may differ from the supplied terms.
+
+# Source versions and help
+
+For information previously obtained through `resourceVersions()`, inspect
+source metadata:
+
+```{r source-versions, eval = online}
+source_versions <- getSources()
+source_versions[c("source_name", "source_short_name", "source_version")]
+```
+
+Record these values alongside your query and analysis date when useful. They
+are metadata from the current service, not a way to select an older snapshot.
+
+Use the new function help pages in place of `?queryDGIdb`, `?rDGIdbFilters`,
+`?rDGIdbResult`, and `?plotInteractionsBySource`:
+
+```{r help, eval = FALSE}
+?getInteractions
+?getCategories
+?getSources
+?getInteractionTypes
+vignette("rDGIdb")
+citation("rDGIdb")
+```
+
+The introductory vignette covers additional capabilities, including drug
+lookups and Drugs@FDA application information. Upstream steps that derive gene
+names from variant annotations can still supply their character vector to
+`getInteractions(terms = genes)`.
+
+# Session information
+
+```{r session-info}
+sessionInfo()
+```
