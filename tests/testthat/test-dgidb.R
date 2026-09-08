@@ -195,26 +195,52 @@ test_that("getDrugApplications() returns FDA product data", {
                 drugApplications = list(list(appNo = "drugsatfda.nda:021588"))
             ))))
         },
-        .getFdaProducts = function(application) {
-            expect_equal(application, "NDA021588")
-            list(list(
-                brand_name = "GLEEVEC",
-                marketing_status = "Prescription",
-                dosage_form = "TABLET",
-                active_ingredients = list(list(strength = "100MG"))
-            ))
+        .fetchFdaBatch = function(applications, fdaApiKey) {
+            expect_equal(applications, "NDA021588")
+            expect_null(fdaApiKey)
+            list(
+                status = "success",
+                lastUpdated = "2026-08-20",
+                applications = list(list(
+                    application_number = "NDA021588",
+                    sponsor_name = "Novartis Pharmaceuticals Corp",
+                    products = list(list(
+                        product_number = "001",
+                        brand_name = "GLEEVEC",
+                        marketing_status = "Prescription",
+                        dosage_form = "TABLET",
+                        route = "ORAL",
+                        reference_drug = "Yes",
+                        reference_standard = "Yes",
+                        te_code = "AB",
+                        active_ingredients = list(
+                            list(name = "IMATINIB MESYLATE", strength = "100MG")
+                        )
+                    ))
+                ))
+            )
         }
     )
 
-    results <- getDrugApplications("Imatinib")
+    results <- getDrugApplications("Imatinib", fdaApiKey = "")
     expect_s3_class(results, "data.frame")
     expect_equal(results$drug_name, "Imatinib")
     expect_equal(results$drug_concept_id, "chembl:941")
-    expect_equal(results$drug_product_application, "NDA021588")
-    expect_equal(results$drug_brand_name, "GLEEVEC")
-    expect_equal(results$drug_marketing_status, "prescription")
-    expect_equal(results$drug_dosage_form, "tablet")
-    expect_equal(results$drug_dosage_strength, "100MG")
+    expect_equal(results$fda_application_number, "NDA021588")
+    expect_equal(results$fda_application_type, "NDA")
+    expect_equal(results$fda_brand_name, "GLEEVEC")
+    expect_equal(results$fda_marketing_status, "Prescription")
+    expect_equal(results$fda_dosage_form, "TABLET")
+    expect_equal(results$fda_data_last_updated, "2026-08-20")
+    expect_equal(results$fda_lookup_status, "success")
+    expect_equal(
+        results$fda_active_ingredients[[1]],
+        data.frame(
+            name = "IMATINIB MESYLATE",
+            strength = "100MG",
+            stringsAsFactors = FALSE
+        )
+    )
 })
 
 test_that("query functions preserve their schemas for empty results", {
@@ -271,9 +297,13 @@ test_that("query functions preserve their schemas for empty results", {
         all_genes = c("gene_name", "gene_concept_id"),
         all_drugs = c("drug_name", "drug_concept_id"),
         applications = c(
-            "drug_name", "drug_concept_id", "drug_product_application",
-            "drug_brand_name", "drug_marketing_status", "drug_dosage_form",
-            "drug_dosage_strength"
+            "drug_name", "drug_concept_id", "fda_application_number",
+            "fda_application_type", "fda_sponsor_name",
+            "fda_product_number", "fda_brand_name",
+            "fda_marketing_status", "fda_dosage_form", "fda_route",
+            "fda_reference_drug", "fda_reference_standard", "fda_te_code",
+            "fda_active_ingredients", "fda_data_last_updated",
+            "fda_lookup_status", "fda_lookup_message"
         )
     )
 

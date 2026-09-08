@@ -1,5 +1,3 @@
-.fdaEndpointUrl <- "https://api.fda.gov/drug/drugsfda.json"
-
 .groupAttributes <- function(row) {
     values <- lapply(row, function(x) x$value)
     keep <- !vapply(values, is.null, logical(1))
@@ -34,31 +32,6 @@
     }
 
     output[columnOrder]
-}
-
-.getFdaProducts <- function(application) {
-    response <- httr2::request(.fdaEndpointUrl) |>
-        httr2::req_url_query(
-            search = paste0("openfda.application_number:", application),
-            limit = 1
-        ) |>
-        httr2::req_timeout(30) |>
-        httr2::req_error(is_error = function(resp) {
-            !httr2::resp_status(resp) %in% c(200L, 404L)
-        }) |>
-        httr2::req_perform()
-
-    if (httr2::resp_status(response) == 404L) {
-        return(list())
-    }
-    httr2::resp_body_json(response)$results[[1]]$products
-}
-
-.normalizeFdaValue <- function(x) {
-    if (is.null(x)) {
-        return(NA_character_)
-    }
-    gsub("[, /-]+", "_", gsub("[()]", "", tolower(x)))
 }
 
 #' Get Drugs
@@ -411,93 +384,6 @@ getAllDrugs <- function(apiUrl = NULL) {
     output <- list(
         drug_name = vapply(nodes, function(x) x$name, character(1)),
         drug_concept_id = vapply(nodes, function(x) x$conceptId, character(1))
-    )
-    .columnsToDataFrame(output)
-}
-
-.fdaProductRow <- function(drug, application, product) {
-    strength <- product$active_ingredients[[1]]$strength
-    if (is.null(strength)) strength <- NA_character_
-    list(
-        drug_name = drug$name,
-        drug_concept_id = drug$conceptId,
-        drug_product_application = application,
-        drug_brand_name = product$brand_name,
-        drug_marketing_status = .normalizeFdaValue(product$marketing_status),
-        drug_dosage_form = .normalizeFdaValue(product$dosage_form),
-        drug_dosage_strength = strength
-    )
-}
-
-.fdaApplicationRows <- function(drug, app) {
-    id <- sub(".*:", "", app$appNo)
-    prefix <- if (grepl("anda", app$appNo, ignore.case = TRUE)) {
-        "ANDA"
-    } else {
-        "NDA"
-    }
-    application <- paste0(prefix, id)
-    products <- tryCatch(
-        .getFdaProducts(application),
-        error = function(e) {
-            warning(
-                sprintf(
-                    "Drugs@FDA lookup failed for %s: %s",
-                    application, conditionMessage(e)
-                ),
-                call. = FALSE
-            )
-            NULL
-        }
-    )
-    if (is.null(products)) {
-        return(list())
-    }
-    if (!length(products)) {
-        warning(
-            sprintf("No Drugs@FDA results for %s", application),
-            call. = FALSE
-        )
-        return(list())
-    }
-    lapply(products, function(product) {
-        .fdaProductRow(drug, application, product)
-    })
-}
-
-#' Get Drug Applications
-#'
-#' Gets Drugs@FDA product information for DGIdb drug application records.
-#'
-#' @param terms Character vector of drug names.
-#' @param apiUrl DGIdb GraphQL endpoint; defaults to `DGIDB_API_URL`.
-#'
-#' @return A data frame of Drugs@FDA product records.
-#'
-#' @examplesIf interactive()
-#' getDrugApplications("Imatinib")
-#' @export
-getDrugApplications <- function(terms, apiUrl = NULL) {
-    fields <- c(
-        "drug_name", "drug_concept_id", "drug_product_application",
-        "drug_brand_name", "drug_marketing_status", "drug_dosage_form",
-        "drug_dosage_strength"
-    )
-    results <- .postQuery(
-        apiUrl,
-        "queries/get_drug_applications.graphql",
-        list(names = terms)
-    )
-
-    rows <- unlist(lapply(results$drugs$nodes, function(drug) {
-        unlist(lapply(drug$drugApplications, function(app) {
-            .fdaApplicationRows(drug, app)
-        }), recursive = FALSE)
-    }), recursive = FALSE)
-
-    output <- stats::setNames(
-        lapply(fields, function(field) vapply(rows, `[[`, character(1), field)),
-        fields
     )
     .columnsToDataFrame(output)
 }

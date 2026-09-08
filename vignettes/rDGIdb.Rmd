@@ -173,16 +173,42 @@ head(sources[c(
 # Drugs\@FDA application information
 
 `getDrugApplications()` combines DGIdb drug application identifiers with
-product information from the openFDA Drugs\@FDA API.
+product-level records from the openFDA Drugs\@FDA API. It returns one row per
+product and preserves the categorical values supplied by openFDA. Applications
+that cannot be enriched are retained with an explanatory `fda_lookup_status`
+and `fda_lookup_message`; possible statuses include `success`, `not_found`,
+`invalid_application`, `no_products`, `no_applications`, and `request_error`.
 
 ```{r fda-applications, eval = online}
 applications <- getDrugApplications("Imatinib")
 
 head(applications[c(
-    "drug_name", "drug_product_application", "drug_brand_name",
-    "drug_dosage_form", "drug_dosage_strength"
+    "drug_name", "fda_application_number", "fda_application_type",
+    "fda_brand_name", "fda_marketing_status", "fda_lookup_status"
 )])
 ```
+
+Active ingredient names and strengths remain paired in a data-frame
+list-column. For example, inspect the ingredients for the first returned
+product with:
+
+```{r fda-ingredients, eval = online}
+applications$fda_active_ingredients[[1]]
+```
+
+An API key is optional. `getDrugApplications()` first uses the `fdaApiKey`
+argument, then the `OPENFDA_API_KEY` environment variable, and otherwise sends
+unauthenticated requests. Environment variables are preferable to putting a
+key directly in a shared script.
+
+```{r fda-api-key, eval = FALSE}
+Sys.setenv(OPENFDA_API_KEY = "your-api-key")
+applications <- getDrugApplications(c("Imatinib", "Gefitinib"))
+```
+
+Application identifiers are deduplicated and queried in batches within each
+call. Drugs\@FDA data are intended for research and should not be used as the
+sole basis for medical decisions.
 
 # Retrieving complete gene or drug lists
 

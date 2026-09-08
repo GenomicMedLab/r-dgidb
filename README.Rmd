@@ -99,6 +99,38 @@ getAllGenes()
 getAllDrugs()
 ```
 
+### Enriching drugs with Drugs\@FDA data
+
+`getDrugApplications()` combines application identifiers from DGIdb with
+product-level records from the openFDA Drugs\@FDA API. It returns one row per
+product, keeps active ingredient names and strengths together in the
+`fda_active_ingredients` list-column, and records unsuccessful lookups in
+`fda_lookup_status` and `fda_lookup_message` instead of silently dropping them.
+
+```{r fda-applications, eval = FALSE}
+applications <- getDrugApplications("Imatinib")
+applications[c(
+    "drug_name", "fda_application_number", "fda_brand_name",
+    "fda_marketing_status", "fda_lookup_status"
+)]
+
+applications$fda_active_ingredients[[1]]
+```
+
+An openFDA API key is optional. For regular or larger workloads, set it once in
+the `OPENFDA_API_KEY` environment variable, or pass it with the `fdaApiKey`
+argument. Avoid placing API keys directly in scripts committed to version
+control.
+
+```{r fda-key, eval = FALSE}
+Sys.setenv(OPENFDA_API_KEY = "your-api-key")
+getDrugApplications(c("Imatinib", "Gefitinib"))
+```
+
+The function batches repeated application lookups within each call. Drugs\@FDA
+data are intended for research and should not be the sole basis for medical
+decisions.
+
 For a complete walkthrough, see:
 
 ```{r vignette, eval = FALSE}
