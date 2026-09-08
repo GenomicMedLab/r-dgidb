@@ -58,6 +58,7 @@ The main functions are:
 | `getGenes()` | Look up gene records |
 | `getDrugs()` | Look up drug records |
 | `getInteractions()` | Find drug-gene interactions by gene or drug |
+| `getInteractionTypes()` | Retrieve DGIdb interaction claim types |
 | `getCategories()` | Retrieve DGIdb gene-category annotations |
 | `getSources()` | Inspect DGIdb aggregate data sources |
 | `getDrugApplications()` | Retrieve Drugs\@FDA product information |
@@ -114,6 +115,27 @@ head(imatinib_interactions[c(
 Additional filters are available for source database, PubMed identifier,
 interaction type, approval status, immunotherapy status, and antineoplastic
 use. Refer to `?getInteractions` for the complete set of arguments.
+
+Use `getInteractionTypes()` to inspect the interaction types currently defined
+by DGIdb. Its `interaction_type` values can be supplied to the
+`interactionType` argument of `getInteractions()`:
+
+```{r interaction-types, eval = online}
+interaction_types <- getInteractionTypes()
+
+head(interaction_types[c(
+    "interaction_type", "interaction_type_directionality",
+    "interaction_type_definition"
+)])
+
+getInteractions(
+    "BRAF",
+    interactionType = interaction_types$interaction_type[[1]]
+)
+```
+
+DGIdb may return the same type label in multiple claim-type records with
+different identifiers. These records are preserved rather than deduplicated.
 
 # Looking up drugs
 

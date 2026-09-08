@@ -237,6 +237,56 @@ getInteractions <- function(
     .interactionOutput(results)
 }
 
+.characterValue <- function(value) {
+    if (is.null(value)) {
+        return(NA_character_)
+    }
+    as.character(value)
+}
+
+
+#' Get Interaction Types
+#'
+#' Retrieves the interaction claim types currently defined by DGIdb. Each row
+#' represents an API record; type labels may occur more than once when DGIdb
+#' returns records with distinct identifiers.
+#'
+#' @param apiUrl DGIdb GraphQL endpoint; defaults to `DGIDB_API_URL`.
+#'
+#' @return A data frame of interaction claim-type records. Missing metadata is
+#' represented by `NA` and reference strings are returned unchanged.
+#'
+#' @examplesIf interactive()
+#' getInteractionTypes()
+#' @export
+getInteractionTypes <- function(apiUrl = NULL) {
+    results <- .postQuery(
+        apiUrl,
+        "queries/get_interaction_types.graphql",
+        NULL
+    )
+
+    nodes <- results$interactionClaimTypes$nodes
+    output <- list(
+        interaction_type = vapply(
+            nodes, function(x) .characterValue(x$type), character(1)
+        ),
+        interaction_type_id = vapply(
+            nodes, function(x) .characterValue(x$id), character(1)
+        ),
+        interaction_type_directionality = vapply(
+            nodes, function(x) .characterValue(x$directionality), character(1)
+        ),
+        interaction_type_definition = vapply(
+            nodes, function(x) .characterValue(x$definition), character(1)
+        ),
+        interaction_type_reference = vapply(
+            nodes, function(x) .characterValue(x$reference), character(1)
+        )
+    )
+    .columnsToDataFrame(output)
+}
+
 #' Get Gene Categories
 #'
 #' Performs a category annotation lookup for genes of interest.
