@@ -34,38 +34,6 @@
     output[columnOrder]
 }
 
-.characterValue <- function(value) {
-    if (is.null(value)) {
-        return(NA_character_)
-    }
-    as.character(value)
-}
-
-.getFdaProducts <- function(application) {
-    response <- httr2::request(.fdaEndpointUrl) |>
-        httr2::req_url_query(
-            search = paste0("openfda.application_number:", application),
-            limit = 1
-        ) |>
-        httr2::req_timeout(30) |>
-        httr2::req_error(is_error = function(resp) {
-            !httr2::resp_status(resp) %in% c(200L, 404L)
-        }) |>
-        httr2::req_perform()
-
-    if (httr2::resp_status(response) == 404L) {
-        return(list())
-    }
-    httr2::resp_body_json(response)$results[[1]]$products
-}
-
-.normalizeFdaValue <- function(x) {
-    if (is.null(x)) {
-        return(NA_character_)
-    }
-    gsub("[, /-]+", "_", gsub("[()]", "", tolower(x)))
-}
-
 #' Get Drugs
 #'
 #' Performs a record lookup in DGIdb for drugs of interest.
@@ -268,6 +236,14 @@ getInteractions <- function(
     results <- .postQuery(apiUrl, queryFile, params)[[search]]$nodes
     .interactionOutput(results)
 }
+
+.characterValue <- function(value) {
+    if (is.null(value)) {
+        return(NA_character_)
+    }
+    as.character(value)
+}
+
 
 #' Get Interaction Types
 #'
