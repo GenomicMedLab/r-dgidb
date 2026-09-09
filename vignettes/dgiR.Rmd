@@ -1,15 +1,15 @@
 ---
-title: "rDGIdb: R Interface to the 'DGIdb' GraphQL API"
+title: "dgiR: R Interface to the 'DGIdb' GraphQL API"
 author:
   - name: Rohit Basu
 date: "`r BiocStyle::doc_date()`"
-package: "`r BiocStyle::pkg_ver('rDGIdb')`"
+package: "`r BiocStyle::pkg_ver('dgiR')`"
 output:
   BiocStyle::html_document:
     toc: true
     toc_depth: 2
 vignette: >
-  %\VignetteIndexEntry{rDGIdb: R Interface to the 'DGIdb' GraphQL API}
+  %\VignetteIndexEntry{dgiR: R Interface to the 'DGIdb' GraphQL API}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -29,7 +29,7 @@ online <- interactive()
 
 The Drug-Gene Interaction Database (DGIdb) provides information about drugs,
 genes, drug-gene interactions, and other therapeutically relevant information.
-`rDGIdb` provides an R interface to the public DGIdb GraphQL API so that these
+`dgiR` provides an R interface to the public DGIdb GraphQL API so that these
 data can be queried directly from R and incorporated into Bioconductor
 workflows.
 
@@ -40,7 +40,7 @@ values for one record, such as aliases or interaction sources, are represented
 as list-columns.
 
 Project source and issue tracking are available at
-<https://github.com/dgidb/r-dgidb>. The DGIdb web application is available at
+<https://github.com/dgidb/dgiR>. The DGIdb web application is available at
 <https://dgidb.org/>.
 
 Users of the legacy `queryDGIdb()` interface can find function mappings and
@@ -49,10 +49,10 @@ replacement recipes in the
 
 # Getting started
 
-Load `rDGIdb` with:
+Load `dgiR` with:
 
 ```{r load-package}
-library(rDGIdb)
+library(dgiR)
 ```
 
 The main functions are:
@@ -89,7 +89,7 @@ head(genes$gene_aliases[[1]])
 
 # Looking up drug-gene interactions
 
-A common use of `rDGIdb` is to start with genes of interest and retrieve known
+A common use of `dgiR` is to start with genes of interest and retrieve known
 or reported drug-gene interactions. By default, `getInteractions()` interprets
 its input as gene names:
 
