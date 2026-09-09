@@ -1,4 +1,4 @@
-Package: rDGIdb
+Package: dgiR
 Title: R Interface to the 'DGIdb' GraphQL API
 Version: 0.99.0
 Authors@R: c(
@@ -29,8 +29,8 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 Depends:
     R (>= 4.6.0)
-URL: https://github.com/dgidb/r-dgidb
-BugReports: https://github.com/dgidb/r-dgidb/issues
+URL: https://github.com/dgidb/dgiR
+BugReports: https://github.com/dgidb/dgiR/issues
 biocViews: DataImport, BiomedicalInformatics
 Roxygen: list(markdown = TRUE)
 Imports:

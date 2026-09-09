@@ -1,21 +1,21 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# rDGIdb
+# dgiR
 
 <!-- badges: start -->
 
 [![Code
-QA](https://github.com/dgidb/r-dgidb/actions/workflows/code_qa.yaml/badge.svg)](https://github.com/dgidb/r-dgidb/actions/workflows/code_qa.yaml)
+QA](https://github.com/dgidb/dgiR/actions/workflows/code_qa.yaml/badge.svg)](https://github.com/dgidb/dgiR/actions/workflows/code_qa.yaml)
 [![R-universe
-testing](https://github.com/dgidb/r-dgidb/actions/workflows/r-universe.yml/badge.svg)](https://github.com/dgidb/r-dgidb/actions/workflows/r-universe.yml)
+testing](https://github.com/dgidb/dgiR/actions/workflows/r-universe.yml/badge.svg)](https://github.com/dgidb/dgiR/actions/workflows/r-universe.yml)
 [![Lifecycle:
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![License:
 MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 <!-- badges: end -->
 
-`rDGIdb` provides an R interface to the [Drug-Gene Interaction Database
+`dgiR` provides an R interface to the [Drug-Gene Interaction Database
 (DGIdb)](https://dgidb.org/) GraphQL API. It supports queries for drugs,
 genes, drug-gene interactions and their claim types, gene categories,
 DGIdb data sources, and Drugs@FDA application data.
@@ -31,7 +31,7 @@ if (!requireNamespace("BiocManager", quietly = TRUE)) {
     install.packages("BiocManager")
 }
 
-BiocManager::install("dgidb/r-dgidb")
+BiocManager::install("dgidb/dgiR")
 ```
 
 Alternatively, after cloning the repository, install the local checkout
@@ -46,7 +46,7 @@ devtools::install(build_vignettes = TRUE)
 Load the package:
 
 ``` r
-library(rDGIdb)
+library(dgiR)
 ```
 
 Query functions return base R data frames. Fields that can contain
@@ -141,11 +141,11 @@ Drugs@FDA data are intended for research and should not be the sole
 basis for medical decisions.
 
 For a complete walkthrough, see the [introductory
-vignette](vignettes/rDGIdb.Rmd). With vignettes installed, open it in R
+vignette](vignettes/dgiR.Rmd). With vignettes installed, open it in R
 with:
 
 ``` r
-vignette("rDGIdb")
+vignette("dgiR")
 ```
 
 ## Migrating from the legacy interface
@@ -160,23 +160,23 @@ vignette("migrating-from-legacy-rDGIdb")
 
 ## Getting help
 
-If you encounter a problem with `rDGIdb`, first check the package
+If you encounter a problem with `dgiR`, first check the package
 documentation and vignette.
 
 ``` r
-help(package = "rDGIdb")
-vignette("rDGIdb")
+help(package = "dgiR")
+vignette("dgiR")
 ```
 
 Bug reports and feature requests can be submitted through the [GitHub
-issue tracker](https://github.com/dgidb/r-dgidb/issues).
+issue tracker](https://github.com/dgidb/dgiR/issues).
 
 ## Citation
 
-To obtain the preferred citation for `rDGIdb`, run:
+To obtain the preferred citation for `dgiR`, run:
 
 ``` r
-citation("rDGIdb")
+citation("dgiR")
 ```
 
 Please also cite the Drug-Gene Interaction Database (DGIdb) when
@@ -184,7 +184,7 @@ appropriate.
 
 ## Code of Conduct
 
-Please note that the `rDGIdb` project follows the [Bioconductor Code of
+Please note that the `dgiR` project follows the [Bioconductor Code of
 Conduct](https://bioconductor.org/about/code-of-conduct/). By
 contributing to this project, you agree to abide by its terms.
 

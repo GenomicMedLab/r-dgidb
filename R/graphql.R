@@ -13,7 +13,7 @@
 #' @noRd
 .fetchQueryPage <- function(apiUrl, query, variables) {
     httr2::request(apiUrl) |>
-        httr2::req_headers("dgidb-client-name" = "rDGIdb") |>
+        httr2::req_headers("dgidb-client-name" = "dgiR") |>
         httr2::req_body_json(list(query = query, variables = variables)) |>
         httr2::req_timeout(30) |>
         httr2::req_perform() |>
@@ -72,7 +72,7 @@
 #' @noRd
 .postQuery <- function(apiUrl, queryFile, variables) {
     apiUrl <- if (!is.null(apiUrl)) apiUrl else .apiEndpointUrl
-    queryFilePath <- system.file(queryFile, package = "rDGIdb", mustWork = TRUE)
+    queryFilePath <- system.file(queryFile, package = "dgiR", mustWork = TRUE)
     query <- readChar(
         queryFilePath,
         file.info(queryFilePath)$size,

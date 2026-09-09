@@ -99,7 +99,7 @@ test_that(".postQuery() rejects pagination responses that cannot advance", {
 
 test_that("all DGIdb connection queries request pagination metadata", {
     queryFiles <- list.files(
-        system.file("queries", package = "rDGIdb"),
+        system.file("queries", package = "dgiR"),
         pattern = "[.]graphql$",
         full.names = TRUE
     )
