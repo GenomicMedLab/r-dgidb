@@ -43,6 +43,10 @@ Project source and issue tracking are available at
 <https://github.com/dgidb/r-dgidb>. The DGIdb web application is available at
 <https://dgidb.org/>.
 
+Users of the legacy `queryDGIdb()` interface can find function mappings and
+replacement recipes in the
+[migration guide](migrating-from-legacy-rDGIdb.html).
+
 # Getting started
 
 Load `rDGIdb` with:
